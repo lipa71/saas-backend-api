@@ -1,0 +1,55 @@
+### Logowanie użytkownika i pobranie tokenu
+POST http://localhost/api/v1/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "email": "john@example.com",
+    "password": "password"
+}
+
+### Pobieranie listy firm z użyciem tokenu Bearer
+GET http://localhost/api/companies
+Accept: application/json
+Authorization: Bearer 2|O3zg42dg9uJHhComnFd0dAQz9gaM3qDlR4Vspjif65c63d1c
+
+### Zakup subskrypcji PRO za pomocą tokenu Bearer i karty testowej
+POST http://localhost/api/v1/subscribe
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer 2|O3zg42dg9uJHhComnFd0dAQz9gaM3qDlR4Vspjif65c63d1c
+
+{
+    "price_id": "price_1U96k9DrjLuNM5AAsVATnY3F",
+    "payment_method": "pm_card_visa"
+}
+
+### 1. Wystawienie nowej faktury dla Company A (Trasa płaska)
+POST http://localhost/company_a/api/v1/invoices
+Accept: application/json
+Content-Type: application/json
+
+{
+    "invoice_number": "INV/2026/09/101",
+    "customer_name": "Acme Corp Ltd",
+    "customer_tax_id": "PL1234567890",
+    "net_amount": 500.00,
+    "vat_amount": 115.00,
+    "gross_amount": 615.00,
+    "due_date": "2026-09-30"
+}
+
+### 2. Pobranie listy faktur dla Company A (Trasa płaska)
+GET http://localhost/company_a/api/v1/invoices
+Accept: application/json
+
+
+{
+    "invoice_number": "INV/2026/09/001",
+    "customer_name": "Acme International Corp",
+    "customer_tax_id": "PL9998887766",
+    "net_amount": 1000.00,
+    "vat_amount": 230.00,
+    "gross_amount": 1230.00,
+    "due_date": "2026-09-30"
+}
