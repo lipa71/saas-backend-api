@@ -3,38 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
-use App\Models\Tenant;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class InvoiceController extends Controller
 {
-    // 1. Pobieranie listy faktur z odizolowanej bazy danych
-    public function index($tenantId)
+    // 1. Pobieranie listy faktur (baza jest już automatycznie przełączona przez middleware)
+    public function index(): JsonResponse
     {
-        $tenant = Tenant::findOrFail($tenantId);
-
-        // Twarda inicjalizacja bazy klienckiej, dokładnie tak jak w Tinkerze
-        tenancy()->initialize($tenant);
-
-        // DIAGNOSTYKA: Zwracamy aktualne parametry połączenia z RAMu
-        return response()->json([
-            'debug_host' => config('database.connections.mysql.host'),
-            'debug_port' => config('database.connections.mysql.port'),
-            'debug_database' => config('database.connections.mysql.database'),
-            'debug_username' => config('database.connections.mysql.username'),
-        ]);
-
         return response()->json([
             'status' => 'success',
             'data' => Invoice::latest()->get(),
         ], 200);
     }
 
-    // 2. Wystawianie nowej faktury do odizolowanej bazy
-    public function store(Request $request, $tenantId)
+    // 2. Wystawianie nowej faktury bezpośrednio do odizolowanej bazy klienta
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'invoice_number' => 'required|string',
+            'invoice_number' => 'required|string|unique:invoices,invoice_number',
             'customer_name' => 'required|string',
             'customer_tax_id' => 'required|string',
             'net_amount' => 'required|numeric',
@@ -42,10 +29,6 @@ class InvoiceController extends Controller
             'gross_amount' => 'required|numeric',
             'due_date' => 'required|date',
         ]);
-
-        $tenant = Tenant::findOrFail($tenantId);
-
-        tenancy()->initialize($tenant);
 
         $invoice = Invoice::create($validated);
 
