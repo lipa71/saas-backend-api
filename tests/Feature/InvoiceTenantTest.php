@@ -1,26 +1,22 @@
 <?php
 
 use App\Models\Tenant;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 
-uses(RefreshDatabase::class);
+uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
-    // 1. Odbudowa bazy centralnej testowej
     Artisan::call('migrate:fresh', ['--path' => 'database/migrations_central']);
 
-    // 2. Generowanie dynamicznego ID, aby uniknąć TenantDatabaseAlreadyExistsException
-    $this->tenantId = 'company_'.uniqid();
-    $this->tenantDomain = $this->tenantId.'.localhost';
+    $this->tenantId = 'company_' . uniqid();
+    $this->tenantDomain = $this->tenantId . '.localhost';
 
     $this->tenant = Tenant::create(['id' => $this->tenantId]);
     $this->tenant->domains()->create(['domain' => $this->tenantDomain]);
 });
 
 test('it can create an invoice via api inside tenant context', function () {
-    // Żądanie POST wysłane na unikalną domenę testową
     $response = $this->json('POST', "http://{$this->tenantDomain}/api/invoices", [
         'invoice_number' => 'FV/2026/09/001',
         'customer_name' => 'Test Client Sp. z o.o.',
@@ -31,8 +27,12 @@ test('it can create an invoice via api inside tenant context', function () {
         'due_date' => '2026-10-13',
     ]);
 
+    // DOPASOWANIE DO PRO-FORMATU Z KONTROLERA
     $response->assertStatus(201)
-        ->assertJson(['message' => 'Invoice created successfully']);
+        ->assertJson([
+            'status' => 'success',
+            'message' => 'Invoice created successfully inside tenant database!',
+        ]);
 
     $this->tenant->run(function () {
         $this->assertDatabaseHas('invoices', [
@@ -58,10 +58,10 @@ test('it can fetch invoices list from tenant context', function () {
         ]);
     });
 
-    // Żądanie GET na dynamiczny adres url punktu końcowego API
     $response = $this->json('GET', "http://{$this->tenantDomain}/api/invoices");
 
+    // WSKAZUJEMY, ŻE CHCEMY POLICZYĆ ELEMENTY WEWNĄTRZ PROPERTIES 'data'
     $response->assertStatus(200)
-        ->assertJsonCount(1)
+        ->assertJsonCount(1, 'data')
         ->assertJsonFragment(['invoice_number' => 'FV/2026/09/002']);
 });
