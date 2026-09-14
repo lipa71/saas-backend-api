@@ -3,21 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Http\Resources\InvoiceResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class InvoiceController extends Controller
 {
-    // 1. Pobieranie listy faktur (baza jest już automatycznie przełączona przez middleware)
-    public function index(): JsonResponse
+    /**
+     * Display a listing of the tenant's invoices.
+     */
+    public function index(): AnonymousResourceCollection
     {
-        return response()->json([
-            'status' => 'success',
-            'data' => Invoice::latest()->get(),
-        ], 200);
+        // Return collection transformed via international InvoiceResource
+        return InvoiceResource::collection(Invoice::latest()->get());
     }
 
-    // 2. Wystawianie nowej faktury bezpośrednio do odizolowanej bazy klienta
+    /**
+     * Store a newly created tenant invoice in storage.
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -35,7 +39,8 @@ class InvoiceController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Invoice created successfully inside tenant database!',
-            'data' => $invoice,
+            // Transform single created model via InvoiceResource
+            'data' => new InvoiceResource($invoice),
         ], 201);
     }
 }
