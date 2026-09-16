@@ -9,6 +9,11 @@ class Invoice extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'invoice_number',
         'customer_name',
@@ -16,7 +21,16 @@ class Invoice extends Model
         'net_amount',
         'vat_amount',
         'gross_amount',
-        'status',
         'due_date',
+        'status',
+    ];
+
+    /**
+     * The model's default values for attributes.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => 'draft',
     ];
 }

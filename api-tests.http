@@ -14,7 +14,7 @@ X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
 
 {
-    "invoice_number": "INV/2026/09/150",
+    "invoice_number": "INV/2026/09/{{$random.alphanumeric(8)}}",
     "customer_name": "International Tech Solutions Ltd",
     "customer_tax_id": "EU987654321",
     "net_amount": 2500.00,
