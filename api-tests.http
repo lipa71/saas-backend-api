@@ -22,3 +22,29 @@ Host: company_a.localhost
     "gross_amount": 3075.00,
     "due_date": "2026-10-15"
 }
+
+### 3. Login as Central Owner (Universal Context)
+POST http://localhost/api/login
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+
+{
+    "email": "owner@saas.com",
+    "password": "password"
+}
+
+###
+
+### 4. Login as Tenant Sub-Account Employee (Isolated Context)
+POST http://localhost/api/login
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+
+{
+    "email": "employee@company.com",
+    "password": "password"
+}
