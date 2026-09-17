@@ -1,17 +1,19 @@
-### 1. Fetch Invoices List for Company A
+### 1. Fetch Invoices List for Company A (Protected)
 GET http://localhost/api/invoices
 Accept: application/json
 X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
 
 ###
 
-### 2. Create a New Invoice for Company A
+### 2. Create a New Invoice for Company A (Protected)
 POST http://localhost/api/invoices
 Accept: application/json
 Content-Type: application/json
 X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
 
 {
     "invoice_number": "INV/2026/09/{{$random.alphanumeric(8)}}",
@@ -23,7 +25,9 @@ Host: company_a.localhost
     "due_date": "2026-10-15"
 }
 
-### 3. Login as Central Owner (Universal Context)
+###
+
+### 4. Login as Central Owner (Universal Context)
 POST http://localhost/api/login
 Accept: application/json
 Content-Type: application/json
@@ -35,9 +39,14 @@ Host: company_a.localhost
     "password": "password"
 }
 
+> {%
+    // Automatically capture the token from the response and store it globally
+    client.global.set("auth_token", response.body.token);
+%}
+
 ###
 
-### 4. Login as Tenant Sub-Account Employee (Isolated Context)
+### 5. Login as Tenant Sub-Account Employee (Isolated Context)
 POST http://localhost/api/login
 Accept: application/json
 Content-Type: application/json
@@ -48,3 +57,8 @@ Host: company_a.localhost
     "email": "employee@company.com",
     "password": "password"
 }
+
+> {%
+    // Automatically capture the token from the response and store it globally
+    client.global.set("auth_token", response.body.token);
+%}
