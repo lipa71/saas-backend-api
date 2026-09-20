@@ -62,3 +62,11 @@ Host: company_a.localhost
     // Automatically capture the token from the response and store it globally
     client.global.set("auth_token", response.body.token);
 %}
+
+### 6. Logout User (Revoke Token)
+POST http://localhost/api/logout
+Accept: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
+

@@ -24,6 +24,7 @@ Route::middleware([
 
         // Protected Invoices Routes (Only accessible with a valid Sanctum Token)
         Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/invoices', [InvoiceController::class, 'index']);
             Route::post('/invoices', [InvoiceController::class, 'store']);
         });
