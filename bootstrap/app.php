@@ -15,8 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // ACTIVATE SANCTUM STATEFUL CAPABILITIES FOR API SUBDOMAINS
+        // Enforce stateful ability across tenant subdomains for Sanctum API auth
         $middleware->statefulApi();
+
+        // Register custom role authorization alias for clean route enforcement
+        $middleware->alias([
+            'role' => \App\Http\Middleware\CheckRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

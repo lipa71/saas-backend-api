@@ -31,13 +31,32 @@ class AuthController extends Controller
             $isCentralUser = true;
         }
 
-        // STEP 3: Verify user existence and check password credentials
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        // STEP 3: Verify user existence and check credentials against the correct database context
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Bad credentials',
             ], 401);
         }
+
+        // If the user is a central user (or a local shadow copy of the central owner), always validate the password centrally
+        if ($isCentralUser || (string) $user->id === (string) tenant('owner_id')) {
+            $isPasswordValid = tenancy()->central(function () use ($request, $user) {
+                $centralUser = User::where('email', $request->email)->first();
+                return $centralUser && Hash::check($request->password, $centralUser->password);
+            });
+        } else {
+            // Standard local tenant employee password verification
+            $isPasswordValid = Hash::check($request->password, $user->password);
+        }
+
+        if (! $isPasswordValid) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bad credentials',
+            ], 401);
+        }
+
 
         // STEP 4: Generate token in the appropriate database context
         if ($isCentralUser) {
@@ -56,6 +75,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role ? $user->role->name : null,
             ],
         ]);
     }

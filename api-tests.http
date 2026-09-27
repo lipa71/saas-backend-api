@@ -13,7 +13,7 @@ Accept: application/json
 Content-Type: application/json
 X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
-Authorization: Bearer {{auth_token}}
+Authorization: Bearer 12|Kn0sNUV99x5CsEp5tr4R9tjzbAV5a2IrHixexSnha29b66e0
 
 {
     "invoice_number": "INV/2026/09/{{$random.alphanumeric(8)}}",
@@ -70,3 +70,22 @@ X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
+
+### 7. Login as Tenant Accountant (Role-Based Context)
+POST http://localhost/api/login
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+
+{
+    "email": "accountant@company.com",
+    "password": "password"
+}
+
+### 8. Test Role Protection
+GET http://localhost/api/test-role-protection
+Accept: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+Authorization: Bearer {{auth_token}}

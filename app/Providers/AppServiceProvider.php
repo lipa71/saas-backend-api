@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use App\Models\CentralPersonalAccessToken;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,7 +21,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Force Sanctum to use our central database model for token validation
-        Sanctum::usePersonalAccessTokenModel(CentralPersonalAccessToken::class);
+        // Grant absolute access to the tenant owner before any other permission checks
+        Gate::before(function (User $user, string $ability) {
+            if ($user->isTenantOwner()) {
+                return true;
+            }
+
+            return null;
+        });
     }
 }
