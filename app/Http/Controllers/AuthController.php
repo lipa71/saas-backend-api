@@ -10,28 +10,55 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     /**
-     * Authenticate both tenant sub-accounts (local) and global owners (central).
+     * Authenticate global platform entities (Owners/Super Admins) inside the central panel.
      */
-    public function login(Request $request): JsonResponse
+    public function loginCentral(Request $request): JsonResponse
     {
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        // STEP 1: Attempt to find the user in the current isolated tenant database (Sub-account)
-        $user = User::where('email', $request->email)->first();
-        $isCentralUser = false;
+        // Force lookup strictly inside the central database context
+        $user = tenancy()->central(function () use ($request) {
+            return User::where('email', $request->email)->first();
+        });
 
-        // STEP 2: If not found locally, fallback to look inside the central database (Global Owner)
-        if (! $user) {
-            $user = tenancy()->central(function () use ($request) {
-                return User::where('email', $request->email)->first();
-            });
-            $isCentralUser = true;
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bad credentials',
+            ], 401);
         }
 
-        // STEP 3: Verify user existence and check credentials against the correct database context
+        // Generate token explicitly bound to the central repository
+        $token = tenancy()->central(fn () => $user->createToken('saas-central-token')->plainTextToken);
+
+        return response()->json([
+            'status' => 'success',
+            'account_type' => 'central_account',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ]);
+    }
+
+    /**
+     * Authenticate operational workspace members (Employees/Owner Shadows) inside the tenant application.
+     */
+    public function loginTenant(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        // Look up strictly within the active tenant database context
+        $user = User::where('email', $request->email)->first();
+
         if (! $user) {
             return response()->json([
                 'status' => 'error',
@@ -39,14 +66,17 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // If the user is a central user (or a local shadow copy of the central owner), always validate the password centrally
-        if ($isCentralUser || (string) $user->id === (string) tenant('owner_id')) {
-            $isPasswordValid = tenancy()->central(function () use ($request, $user) {
+        // Determine if this user represents the owner's local shadow account
+        $isTenantOwner = (string) $user->id === (string) tenant('owner_id');
+
+        // If it's the owner shadow copy, delegate password verification back to the central master authority
+        if ($isTenantOwner) {
+            $isPasswordValid = tenancy()->central(function () use ($request) {
                 $centralUser = User::where('email', $request->email)->first();
                 return $centralUser && Hash::check($request->password, $centralUser->password);
             });
         } else {
-            // Standard local tenant employee password verification
+            // Standard local workspace employee verification
             $isPasswordValid = Hash::check($request->password, $user->password);
         }
 
@@ -57,25 +87,18 @@ class AuthController extends Controller
             ], 401);
         }
 
-
-        // STEP 4: Generate token in the appropriate database context
-        if ($isCentralUser) {
-            // Generate and store token inside central database
-            $token = tenancy()->central(fn () => $user->createToken('saas-api-token')->plainTextToken);
-        } else {
-            // Generate and store token inside isolated tenant database
-            $token = $user->createToken('saas-api-token')->plainTextToken;
-        }
+        // Generate standard token in the current isolated tenant database
+        $token = $user->createToken('saas-tenant-token')->plainTextToken;
 
         return response()->json([
             'status' => 'success',
-            'account_type' => $isCentralUser ? 'central_owner' : 'tenant_sub_account',
+            'account_type' => $isTenantOwner ? 'tenant_owner' : 'tenant_sub_account',
             'token' => $token,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role ? $user->role->name : null,
+                'role' => $user->roles()->exists() ? $user->roles->first()?->name : null,
             ],
         ]);
     }
@@ -85,7 +108,6 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        // Delete the token that was used to authenticate the current request
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([

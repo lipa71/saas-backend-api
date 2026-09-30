@@ -20,7 +20,7 @@ Route::middleware([
 
     Route::prefix('api')->group(function () {
         // Authentication Route (Remains public so users can actually log in)
-        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/login', [AuthController::class, 'loginTenant']);
 
         // Protected Routes (Only accessible with a valid Sanctum Token)
         Route::middleware('auth:sanctum,central_api')->group(function () {

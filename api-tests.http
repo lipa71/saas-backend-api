@@ -1,33 +1,27 @@
-### 1. Fetch Invoices List for Company A (Protected)
-GET http://localhost/api/invoices
-Accept: application/json
-X-Requested-With: XMLHttpRequest
-Host: company_a.localhost
-Authorization: Bearer {{auth_token}}
-
-###
-
-### 2. Create a New Invoice for Company A (Protected)
-POST http://localhost/api/invoices
+### 1. Login as Owner to Central Admin Panel
+POST http://localhost/api/central/v1/login
 Accept: application/json
 Content-Type: application/json
 X-Requested-With: XMLHttpRequest
-Host: company_a.localhost
-Authorization: Bearer 12|Kn0sNUV99x5CsEp5tr4R9tjzbAV5a2IrHixexSnha29b66e0
 
 {
-    "invoice_number": "INV/2026/09/{{$random.alphanumeric(8)}}",
-    "customer_name": "International Tech Solutions Ltd",
-    "customer_tax_id": "EU987654321",
-    "net_amount": 2500.00,
-    "vat_amount": 575.00,
-    "gross_amount": 3075.00,
-    "due_date": "2026-10-15"
+    "email": "owner@saas.com",
+    "password": "password"
 }
 
-###
+> {%
+    client.global.set("central_token", response.body.token);
+%}
 
-### 4. Login as Central Owner (Universal Context)
+
+### 2. Logout from Central Admin Panel
+POST http://localhost/api/v1/logout
+Accept: application/json
+X-Requested-With: XMLHttpRequest
+Authorization: Bearer {{central_token}}
+
+
+### 3. Login as Owner to company_a (Tenant space via shadow copy)
 POST http://localhost/api/login
 Accept: application/json
 Content-Type: application/json
@@ -40,13 +34,11 @@ Host: company_a.localhost
 }
 
 > {%
-    // Automatically capture the token from the response and store it globally
     client.global.set("auth_token", response.body.token);
 %}
 
-###
 
-### 5. Login as Tenant Sub-Account Employee (Isolated Context)
+### 4. Login as Manager Sub Account to company_a
 POST http://localhost/api/login
 Accept: application/json
 Content-Type: application/json
@@ -54,16 +46,33 @@ X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
 
 {
-    "email": "employee@company.com",
+    "email": "manager@companya.com",
     "password": "password"
 }
 
 > {%
-    // Automatically capture the token from the response and store it globally
     client.global.set("auth_token", response.body.token);
 %}
 
-### 6. Logout User (Revoke Token)
+
+### 5. Login as a Viewer Sub Account to company_a
+POST http://localhost/api/login
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+
+{
+    "email": "viewer@companya.com",
+    "password": "password"
+}
+
+> {%
+    client.global.set("auth_token", response.body.token);
+%}
+
+
+### 6. Logout from company_a
 POST http://localhost/api/logout
 Accept: application/json
 X-Requested-With: XMLHttpRequest
@@ -71,20 +80,34 @@ Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
 
-### 7. Login as Tenant Accountant (Role-Based Context)
-POST http://localhost/api/login
+### 7. Test Role Protection company_a
+GET http://localhost/api/test-role-protection
+Accept: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
+
+
+### 8. Create Invoice company_a
+POST http://localhost/api/invoices
 Accept: application/json
 Content-Type: application/json
 X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
 
 {
-    "email": "accountant@company.com",
-    "password": "password"
+    "invoice_number": "INV-2026-001",
+    "customer_name": "Acme Corporation",
+    "customer_tax_id": "PL1234567890",
+    "net_amount": 1000.00,
+    "vat_amount": 230.00,
+    "gross_amount": 1230.00,
+    "due_date": "2026-10-14"
 }
 
-### 8. Test Role Protection
-GET http://localhost/api/test-role-protection
+### 9. Get Invoice list company_a
+GET http://localhost/api/invoices
 Accept: application/json
 X-Requested-With: XMLHttpRequest
 Host: company_a.localhost

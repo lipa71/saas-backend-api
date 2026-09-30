@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Publiczne punkty końcowe (API Endpoints)
+| Public Endpoints (Unprotected Central API)
 |--------------------------------------------------------------------------
 */
 
-// 1. Status działania aplikacji (Ten endpoint testuje StatusApiTest)
+// 1. Application health check status
 Route::get('/v1/status', function () {
     return response()->json([
         'status' => 'success',
@@ -20,10 +20,7 @@ Route::get('/v1/status', function () {
     ]);
 });
 
-// 2. Logowanie użytkownika i generowanie tokenu
-Route::post('/v1/login', [AuthController::class, 'login']);
-
-// 3. Obsługa błędu autoryzacji (Przekierowanie, gdy brak tokenu)
+// 2. Fallback auth check route for unauthenticated requests
 Route::get('/v1/unauthorized', function () {
     return response()->json([
         'status' => 'error',
@@ -31,25 +28,26 @@ Route::get('/v1/unauthorized', function () {
     ], 401);
 })->name('login');
 
-Route::middleware('auth:sanctum')->group(function () {
-
-    Route::apiResource('companies', CompanyController::class);
-
-    // NOWA TRASA PŁATNOŚCI:
-    Route::post('/v1/subscribe', [SubscriptionController::class, 'subscribe']);
-
+// 3. Central administration panel authentication (Global Owners)
+Route::prefix('central')->group(function () {
+    Route::post('/v1/login', [AuthController::class, 'loginCentral']);
 });
+
 
 /*
 |--------------------------------------------------------------------------
-| Bezpieczne punkty końcowe chronione przez Laravel Sanctum
+| Protected Endpoints (Laravel Sanctum Secured Landlord API)
 |--------------------------------------------------------------------------
 */
-
-// Trasy wewnątrz tej grupy wymagają nagłówka "Authorization: Bearer TWÓJ_TOKEN"
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Pełen zestaw CRUD dla firm (Ten endpoint testuje CompaniesApiTest)
+    // Core SaaS business domains configuration resource management
     Route::apiResource('companies', CompanyController::class);
+
+    // Stripe checkout or corporate licensing plan management subscription hook
+    Route::post('/v1/subscribe', [SubscriptionController::class, 'subscribe']);
+
+    // ADDED HERE: Centralized administrator logout endpoint
+    Route::post('/v1/logout', [AuthController::class, 'logout']);
 
 });

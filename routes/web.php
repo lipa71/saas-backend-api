@@ -1,11 +1,9 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
-Route::get('/api-test-direct', function () {
-    return response()->json(['status' => 'direct-ok']);
+// Central administration panel authentication endpoints
+Route::prefix('api/central')->group(function () {
+    Route::post('/login', [AuthController::class, 'loginCentral']);
 });
