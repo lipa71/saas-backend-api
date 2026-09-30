@@ -3,33 +3,51 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
-use App\Http\Resources\InvoiceResource;
-use App\Http\Requests\StoreInvoiceRequest; // Import the new request class
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
 {
     /**
-     * Display a listing of the tenant's invoices.
+     * Display a listing of the resource.
      */
-    public function index(): AnonymousResourceCollection
+    public function index(): JsonResponse
     {
-        return InvoiceResource::collection(Invoice::latest()->get());
-    }
+        // Enforce the 'viewAny' policy rule checking roles dynamically
+        $this->authorize('viewAny', Invoice::class);
 
-    /**
-     * Store a newly created tenant invoice in storage.
-     */
-    public function store(StoreInvoiceRequest $request): JsonResponse
-    {
-        // The incoming data is already validated automatically before entering this method
-        $invoice = Invoice::create($request->validated());
+        $invoices = Invoice::all();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Invoice created successfully inside tenant database!',
-            'data' => new InvoiceResource($invoice),
+            'data' => $invoices
+        ], 200);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        // Enforce the 'create' policy rule checking roles dynamically
+        $this->authorize('create', Invoice::class);
+
+        // Your existing request validation logic
+        $validated = $request->validate([
+            'invoice_number' => 'required|string',
+            'customer_name' => 'required|string',
+            'customer_tax_id' => 'required|string',
+            'net_amount' => 'required|numeric',
+            'vat_amount' => 'required|numeric',
+            'gross_amount' => 'required|numeric',
+            'due_date' => 'required|date',
+        ]);
+
+        $invoice = Invoice::create($validated);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $invoice
         ], 201);
     }
 }

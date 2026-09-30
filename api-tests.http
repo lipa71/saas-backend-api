@@ -97,7 +97,7 @@ Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
 {
-    "invoice_number": "INV-2026-001",
+    "invoice_number": "INV-2026-{{$randomInt}}",
     "customer_name": "Acme Corporation",
     "customer_tax_id": "PL1234567890",
     "net_amount": 1000.00,

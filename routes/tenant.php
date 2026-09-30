@@ -26,14 +26,8 @@ Route::middleware([
         Route::middleware('auth:sanctum,central_api')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
 
-            // Invoices Routes - Protected by dynamic corporate roles
-            // 1. Fetching invoices is allowed for all authenticated company members
-            Route::get('/invoices', [InvoiceController::class, 'index'])
-                ->middleware('role:admin,manager,accountant,viewer');
-
-            // 2. Creating an invoice is strictly restricted to admins and managers
-            Route::post('/invoices', [InvoiceController::class, 'store'])
-                ->middleware('role:admin,manager');
+            // Invoices Resource - Automated routing mapping for all CRUD actions
+            Route::apiResource('invoices', InvoiceController::class);
 
             // Temporarily placed for role middleware architecture verification
             Route::middleware('role:admin,manager')->get('/test-role-protection', function () {
