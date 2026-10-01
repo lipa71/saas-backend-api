@@ -55,7 +55,7 @@ Host: company_a.localhost
 %}
 
 
-### 5. Login as a Viewer Sub Account to company_a
+### 5a. Login as a Viewer Sub Account to company_a
 POST http://localhost/api/login
 Accept: application/json
 Content-Type: application/json
@@ -64,6 +64,22 @@ Host: company_a.localhost
 
 {
     "email": "viewer@companya.com",
+    "password": "password"
+}
+
+> {%
+    client.global.set("auth_token", response.body.token);
+%}
+
+### 5b. Login as a Accountant Sub Account to company_a
+POST http://localhost/api/login
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+
+{
+    "email": "accountant@companya.com",
     "password": "password"
 }
 
@@ -97,7 +113,7 @@ Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
 {
-    "invoice_number": "INV-2026-{{$randomInt}}",
+    "invoice_number": "INV-2026-{{$random.integer(1, 99999)}}",
     "customer_name": "Acme Corporation",
     "customer_tax_id": "PL1234567890",
     "net_amount": 1000.00,
@@ -106,8 +122,44 @@ Authorization: Bearer {{auth_token}}
     "due_date": "2026-10-14"
 }
 
+> {%
+    // Capture the newly created invoice ID for downstream detailed resource tests
+    client.global.set("invoice_id", response.body.data.id);
+%}
+
+
 ### 9. Get Invoice list company_a
 GET http://localhost/api/invoices
+Accept: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
+
+
+### 10. Get Single Invoice Details company_a
+GET http://localhost/api/invoices/{{invoice_id}}
+Accept: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
+
+
+### 11. Update Invoice company_a
+PUT http://localhost/api/invoices/{{invoice_id}}
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
+
+{
+    "customer_name": "Acme International LLC",
+    "gross_amount": 1500.00
+}
+
+
+### 12. Delete Invoice company_a
+DELETE http://localhost/api/invoices/{{invoice_id}}
 Accept: application/json
 X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
