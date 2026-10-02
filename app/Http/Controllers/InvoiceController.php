@@ -124,12 +124,58 @@ class InvoiceController extends Controller
             'customer_vat_number' => 'sometimes|required|string',
             'due_date' => 'sometimes|required|date',
             'status' => 'sometimes|required|string',
+            'items' => 'sometimes|required|array|min:1',
+            'items.*.description' => 'required_with:items|string',
+            'items.*.quantity' => 'required_with:items|integer|min:1',
+            'items.*.unit_net_price' => 'required_with:items|numeric|min:0',
+            'items.*.vat_rate_id' => 'required_with:items|exists:vat_rates,id',
         ]);
 
-        $invoice->update($validated);
+        DB::transaction(function () use ($validated, $invoice) {
+
+            // 1. Update invoice header meta tracking
+            $invoice->update(array_filter([
+                'customer_name' => $validated['customer_name'] ?? null,
+                'customer_vat_number' => $validated['customer_vat_number'] ?? null,
+                'due_date' => $validated['due_date'] ?? null,
+                'status' => $validated['status'] ?? null,
+            ]));
+
+            // 2. Clear and cleanly rebuild relations to prevent index collision anomalies during raw API testing
+            if (isset($validated['items'])) {
+                $invoice->items()->delete();
+
+                foreach ($validated['items'] as $itemData) {
+                    $vatRateRecord = VatRate::findOrFail($itemData['vat_rate_id']);
+                    $taxPercentage = (float) $vatRateRecord->rate;
+
+                    $quantity = (int) $itemData['quantity'];
+                    $unitNetPrice = (float) $itemData['unit_net_price'];
+
+                    $netAmount = round($quantity * $unitNetPrice, 2);
+                    $vatAmount = round($netAmount * ($taxPercentage / 100), 2);
+                    $grossAmount = round($netAmount + $vatAmount, 2);
+
+                    $invoice->items()->create([
+                        'vat_rate_id' => $vatRateRecord->id,
+                        'description' => $itemData['description'],
+                        'quantity' => $quantity,
+                        'unit_net_price' => $unitNetPrice,
+                        'vat_rate' => $taxPercentage,
+                        'net_amount' => $netAmount,
+                        'vat_amount' => $vatAmount,
+                        'gross_amount' => $grossAmount,
+                    ]);
+                }
+            }
+
+            // 3. Force mathematical recalculations down to the core fields
+            $invoice->recalculateTotals();
+        });
 
         return response()->json([
             'status' => 'success',
+            'message' => 'Invoice and its items synchronized successfully.',
             'data' => $invoice->load('items.vatRate')
         ], 200);
     }

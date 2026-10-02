@@ -155,7 +155,7 @@ Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
 
-### 11. Update Invoice company_a
+### 11. Update Invoice company_a (Advanced multi-item sync in EUR)
 PUT http://localhost/api/invoices/{{invoice_id}}
 Accept: application/json
 Content-Type: application/json
@@ -164,9 +164,23 @@ Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
 {
-    "customer_name": "Acme International Europe LLC",
-    "due_date": "2026-10-30"
+    "customer_name": "Acme Europe Logistics BV - Modified",
+    "items": [
+        {
+            "description": "Enterprise SaaS Server Hardware Node (Local EU Warehouse Delivery)",
+            "quantity": 1,
+            "unit_net_price": 2500.00,
+            "vat_rate_id": 1
+        },
+        {
+            "description": "Extended EU SLA Technical Support (New Line Added)",
+            "quantity": 1,
+            "unit_net_price": 400.00,
+            "vat_rate_id": 1
+        }
+    ]
 }
+
 
 
 ### 12. Delete Invoice company_a
