@@ -13,7 +13,7 @@ use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
 use Stancl\Tenancy\UUIDGenerator;
-
+use Database\Seeders\DatabaseSeeder;
 return [
     'tenant_model' => App\Models\Tenant::class,
 
@@ -203,7 +203,7 @@ return [
      * Parameters used by the tenants:seed command.
      */
     'seeder_parameters' => [
-        '--class' => \Database\Seeders\TenantRolesSeeder::class, // Main tenant seeder class
-        // '--force' => true, // This needs to be true to seed tenant databases in production
+        '--class' => DatabaseSeeder::class, // Main seeder class
+        '--force' => true, // This needs to be true to seed tenant databases in production
     ],
 ];

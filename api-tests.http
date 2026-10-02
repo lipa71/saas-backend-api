@@ -104,7 +104,7 @@ Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
 
-### 8. Create Invoice company_a
+### 8. Create Invoice company_a (Advanced with multiple EU VAT line items in EUR)
 POST http://localhost/api/invoices
 Accept: application/json
 Content-Type: application/json
@@ -113,13 +113,24 @@ Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
 {
-    "invoice_number": "INV-2026-{{$random.integer(1, 99999)}}",
-    "customer_name": "Acme Corporation",
-    "customer_tax_id": "PL1234567890",
-    "net_amount": 1000.00,
-    "vat_amount": 230.00,
-    "gross_amount": 1230.00,
-    "due_date": "2026-10-14"
+    "invoice_number": "INV-EU-2026-{{$random.integer(1, 99999)}}",
+    "customer_name": "Acme Europe Logistics BV",
+    "customer_vat_number": "NL847294729B01",
+    "due_date": "2026-10-14",
+    "items": [
+        {
+            "description": "Enterprise SaaS Server Hardware Node (Local EU Warehouse Delivery)",
+            "quantity": 1,
+            "unit_net_price": 2500.00,
+            "vat_rate_id": 1
+        },
+        {
+            "description": "Cloud Infrastructure Licensing & Cross-Border Consultation (Reverse Charge)",
+            "quantity": 12,
+            "unit_net_price": 150.00,
+            "vat_rate_id": 3
+        }
+    ]
 }
 
 > {%
@@ -153,8 +164,8 @@ Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
 {
-    "customer_name": "Acme International LLC",
-    "gross_amount": 1500.00
+    "customer_name": "Acme International Europe LLC",
+    "due_date": "2026-10-30"
 }
 
 

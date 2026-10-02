@@ -18,11 +18,6 @@ return new class extends Migration
             $table->string('display_name');  // Human-readable name, e.g., 'Administrator', 'Accountant'
             $table->timestamps();
         });
-
-        // Add foreign key relationship to the existing isolated users table
-        Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('role_id')->nullable()->after('id')->constrained('roles')->nullOnDelete();
-        });
     }
 
     /**
@@ -30,11 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign(['role_id']);
-            $table->dropColumn('role_id');
-        });
-
         Schema::dropIfExists('roles');
     }
 };
