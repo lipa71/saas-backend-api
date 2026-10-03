@@ -17,7 +17,6 @@ class InvoiceController extends Controller
     {
         $this->authorize('viewAny', Invoice::class);
 
-        // Eager load items and their corresponding VAT rate dictionary data
         $invoices = Invoice::with('items.vatRate')->get();
 
         return response()->json([
@@ -33,7 +32,6 @@ class InvoiceController extends Controller
     {
         $this->authorize('create', Invoice::class);
 
-        // Advanced nested validation enforcing dictionary bounds for EU VAT rules
         $validated = $request->validate([
             'invoice_number' => 'required|string',
             'customer_name' => 'required|string',
@@ -46,9 +44,7 @@ class InvoiceController extends Controller
             'items.*.vat_rate_id' => 'required|exists:vat_rates,id',
         ]);
 
-        // Execute inside a database transaction to preserve multi-table atomic integrity
         $invoice = DB::transaction(function () use ($validated) {
-
             // 1. Create the base invoice header with temporary zero financial totals
             $invoice = Invoice::create([
                 'invoice_number' => $validated['invoice_number'],
@@ -60,35 +56,8 @@ class InvoiceController extends Controller
                 'gross_amount' => 0.00,
             ]);
 
-            // 2. Iterate and mathematically process each line item dynamically
-            foreach ($validated['items'] as $itemData) {
-                // Fetch the official immutable percentage rate directly from the dictionary source record
-                $vatRateRecord = VatRate::findOrFail($itemData['vat_rate_id']);
-                $taxPercentage = (float) $vatRateRecord->rate;
-
-                $quantity = (int) $itemData['quantity'];
-                $unitNetPrice = (float) $itemData['unit_net_price'];
-
-                // Microfinancial math calculated strictly in Euro cents precision
-                $netAmount = round($quantity * $unitNetPrice, 2);
-                $vatAmount = round($netAmount * ($taxPercentage / 100), 2);
-                $grossAmount = round($netAmount + $vatAmount, 2);
-
-                // Persist the individual line item directly linked to the new invoice
-                $invoice->items()->create([
-                    'vat_rate_id' => $vatRateRecord->id,
-                    'description' => $itemData['description'],
-                    'quantity' => $quantity,
-                    'unit_net_price' => $unitNetPrice,
-                    'vat_rate' => $taxPercentage, // Preserved history snap copy
-                    'net_amount' => $netAmount,
-                    'vat_amount' => $vatAmount,
-                    'gross_amount' => $grossAmount,
-                ]);
-            }
-
-            // 3. Trigger the internal model aggregate recalculator to finish processing totals
-            $invoice->recalculateTotals();
+            // 2. Delegate line items processing to the unified internal helper method
+            $this->syncInvoiceItems($invoice, $validated['items']);
 
             return $invoice;
         });
@@ -132,8 +101,7 @@ class InvoiceController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $invoice) {
-
-            // 1. Update invoice header meta tracking
+            // 1. Update invoice header properties dynamically
             $invoice->update(array_filter([
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_vat_number' => $validated['customer_vat_number'] ?? null,
@@ -141,36 +109,14 @@ class InvoiceController extends Controller
                 'status' => $validated['status'] ?? null,
             ]));
 
-            // 2. Clear and cleanly rebuild relations to prevent index collision anomalies during raw API testing
+            // 2. Clear and cleanly rebuild relation lines if present in the payload
             if (isset($validated['items'])) {
                 $invoice->items()->delete();
-
-                foreach ($validated['items'] as $itemData) {
-                    $vatRateRecord = VatRate::findOrFail($itemData['vat_rate_id']);
-                    $taxPercentage = (float) $vatRateRecord->rate;
-
-                    $quantity = (int) $itemData['quantity'];
-                    $unitNetPrice = (float) $itemData['unit_net_price'];
-
-                    $netAmount = round($quantity * $unitNetPrice, 2);
-                    $vatAmount = round($netAmount * ($taxPercentage / 100), 2);
-                    $grossAmount = round($netAmount + $vatAmount, 2);
-
-                    $invoice->items()->create([
-                        'vat_rate_id' => $vatRateRecord->id,
-                        'description' => $itemData['description'],
-                        'quantity' => $quantity,
-                        'unit_net_price' => $unitNetPrice,
-                        'vat_rate' => $taxPercentage,
-                        'net_amount' => $netAmount,
-                        'vat_amount' => $vatAmount,
-                        'gross_amount' => $grossAmount,
-                    ]);
-                }
+                $this->syncInvoiceItems($invoice, $validated['items']);
+            } else {
+                // Ensure totals are still fresh if only header metadata changed
+                $invoice->recalculateTotals();
             }
-
-            // 3. Force mathematical recalculations down to the core fields
-            $invoice->recalculateTotals();
         });
 
         return response()->json([
@@ -193,5 +139,38 @@ class InvoiceController extends Controller
             'status' => 'success',
             'message' => 'Invoice deleted successfully.'
         ], 200);
+    }
+
+    /**
+     * Unified internal helper to calculate and persist line items mathematically in Euro cents.
+     */
+    private function syncInvoiceItems(Invoice $invoice, array $itemsData): void
+    {
+        foreach ($itemsData as $itemData) {
+            $vatRateRecord = VatRate::findOrFail($itemData['vat_rate_id']);
+            $taxPercentage = (float) $vatRateRecord->rate;
+
+            $quantity = (int) $itemData['quantity'];
+            $unitNetPrice = (float) $itemData['unit_net_price'];
+
+            // Precise real-time microfinancial mathematical recalculations
+            $netAmount = round($quantity * $unitNetPrice, 2);
+            $vatAmount = round($netAmount * ($taxPercentage / 100), 2);
+            $grossAmount = round($netAmount + $vatAmount, 2);
+
+            $invoice->items()->create([
+                'vat_rate_id' => $vatRateRecord->id,
+                'description' => $itemData['description'],
+                'quantity' => $quantity,
+                'unit_net_price' => $unitNetPrice,
+                'vat_rate' => $taxPercentage, // Snap immutable history copy
+                'net_amount' => $netAmount,
+                'vat_amount' => $vatAmount,
+                'gross_amount' => $grossAmount,
+            ]);
+        }
+
+        // Trigger the internal model aggregate recalculator to finish processing totals
+        $invoice->recalculateTotals();
     }
 }
