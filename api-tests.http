@@ -189,3 +189,39 @@ Accept: application/json
 X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
+
+
+### 13. Create Invitation company_a (Team Management)
+POST http://localhost/api/invitations
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
+
+{
+    "email": "new.employee@companya.com",
+    "role": "accountant"
+}
+
+> {%
+    // Extract the secure token string out of the generated activation URL dynamically
+    var url = response.body.data.activation_url;
+    var token = url.split('token=')[1];
+    client.global.set("invitation_token", token);
+%}
+
+### 14. Accept Invitation & Register Account company_a
+POST http://localhost/api/register/accept
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+
+{
+    "token": "{{invitation_token}}",
+    "name": "Mark Accountant Created Via API",
+    "password": "password",
+    "password_confirmation": "password"
+}
+
