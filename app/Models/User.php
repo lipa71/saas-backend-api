@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Cashier\Billable;
@@ -123,4 +124,21 @@ class User extends Authenticatable
             $this->roles()->detach($role->id);
         }
     }
+
+    /**
+     * Get the corporate companies owned by this central landlord user.
+     */
+    public function companies(): HasMany
+    {
+        return $this->hasMany(Company::class, 'user_id');
+    }
+
+    /**
+     * Get the Stripe payment subscriptions associated with this central user.
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class, 'user_id');
+    }
+
 }

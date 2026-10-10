@@ -14,8 +14,10 @@ use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
 use Stancl\Tenancy\UUIDGenerator;
 use Database\Seeders\DatabaseSeeder;
+use App\Models\Company;
+
 return [
-    'tenant_model' => App\Models\Tenant::class,
+    'tenant_model' => Company::class,
 
     'id_generator' => UUIDGenerator::class,
 

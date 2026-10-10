@@ -14,12 +14,21 @@ class CreateTenantsTable extends Migration
     public function up(): void
     {
         Schema::create('tenants', function (Blueprint $table) {
+            // Native string identifier used for cross-database isolation mapping
             $table->string('id')->primary();
 
-            // your custom columns may go here
+            // UNIFIED SaaS EXPANSION: Direct connection link to the landlord users table
+            $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnDelete();
+
+            // Enterprise Business Metas
+            $table->string('name')->nullable();
+            $table->string('email')->nullable();
+            $table->string('subscription_plan')->default('free');
+
+            // Native JSON data columns required by the core engine
+            $table->json('data')->nullable();
 
             $table->timestamps();
-            $table->json('data')->nullable();
         });
     }
 

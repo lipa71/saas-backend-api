@@ -8,6 +8,7 @@ use App\Http\Controllers\InvitationController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use App\Http\Middleware\TenantBillingGate;
 
 Route::middleware([
     'api',
@@ -27,7 +28,10 @@ Route::middleware([
         Route::post('/register/accept', [InvitationController::class, 'acceptInvitation']);
 
         // Protected Routes (Only accessible with a valid Sanctum Token)
-        Route::middleware('auth:sanctum,central_api')->group(function () {
+        Route::middleware([
+            'auth:sanctum,central_api',
+            TenantBillingGate::class,
+        ])->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
 
             // Invoices Resource - Automated routing mapping for all CRUD actions
