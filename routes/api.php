@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\CentralStripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -32,6 +33,10 @@ Route::get('/v1/unauthorized', function () {
 Route::prefix('central')->group(function () {
     Route::post('/v1/login', [AuthController::class, 'loginCentral']);
 });
+
+// 4. Central Landlord Webhook Inbound Gateway (Publicly accessible by Stripe servers)
+Route::post('/stripe/webhook', [CentralStripeWebhookController::class, 'handleWebhook']);
+
 
 
 /*

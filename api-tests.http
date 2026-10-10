@@ -225,3 +225,23 @@ Host: company_a.localhost
     "password_confirmation": "password"
 }
 
+### 15. Simulate Stripe Inbound Webhook (Activate Subscription)
+POST http://localhost/api/stripe/webhook
+Accept: application/json
+Content-Type: application/json
+
+{
+    "id": "evt_test_{{$random.integer(1, 99999)}}",
+    "type": "customer.subscription.created",
+    "data": {
+        "object": {
+            "id": "sub_enterprise_companya_2026",
+            "customer": "cus_stripe_mock_owner_1",
+            "customer_email": "owner@saas.com",
+            "status": "active",
+            "current_period_end": 1791554400
+        }
+    }
+}
+
+

@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\User;
+use App\Models\Company;
 
 class TenantBillingGate
 {
@@ -17,14 +18,20 @@ class TenantBillingGate
         // 1. Resolve the currently active tenant workspace initialized by Stancl/Tenancy
         $tenant = tenant();
 
-        if (! $tenant) {
+        if (!$tenant) {
             return $next($request);
         }
 
-        // 2. Bypass strict financial gates if the company is assigned to a standard freemium tier
-        if (($tenant->subscription_plan ?? 'free') === 'free') {
+        // 2. UNIFIED: Query the central database record directly to bypass internal tenant serialization limits
+        $centralCompany = Company::on('mysql')->find($tenant->id);
+
+        $currentPlan = $centralCompany ? $centralCompany->subscription_plan : 'free';
+
+        if ($currentPlan === 'free') {
             return $next($request);
         }
+
+
 
         // 3. Eager load the landlord owner along with their central Stripe subscription records
         $owner = User::on('mysql')->with('subscriptions')->find($tenant->user_id);
@@ -43,7 +50,7 @@ class TenantBillingGate
             ->first();
 
         // 5. Enforce strict blocking rules if payments are delinquent, canceled, or expired
-        if (! $subscription || !in_array($subscription->stripe_status, ['active', 'trialing'])) {
+        if (! $subscription || ! in_array($subscription->stripe_status, ['active', 'trialing'])) {
             return response()->json([
                 'status' => 'error',
                 'code' => 'PAYMENT_REQUIRED',

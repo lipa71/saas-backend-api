@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            'api/stripe/webhook', // UNIFIED: Exclude central stripe webhook route from CSRF checks
+        ]);
+
         // Enforce stateful ability across tenant subdomains for Sanctum API auth
         $middleware->statefulApi();
 
