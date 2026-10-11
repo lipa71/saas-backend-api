@@ -1,3 +1,20 @@
+### 0. Force Clear Client Environment Variables & Session Tokens Locally
+POST http://localhost/api/stripe/webhook
+Accept: application/json
+Content-Type: application/json
+
+{
+    "type": "local.cache.flush.trigger"
+}
+
+> {%
+    // AUTOMATION: Atomic manual wipe of cached client global variables inside PhpStorm memory
+    client.global.set("auth_token", "");
+    client.global.set("invoice_id", "");
+
+    client.log("Client HTTP memory tokens successfully flushed to null.");
+%}
+
 ### 1. Login as Owner to Central Admin Panel
 POST http://localhost/api/central/v1/login
 Accept: application/json
@@ -228,7 +245,7 @@ Host: company_a.localhost
     "password_confirmation": "password"
 }
 
-### 15. Simulate Stripe Inbound Webhook (Activate Subscription)
+### 15. Simulate Stripe Inbound Webhook (Activate Multi-Item Subscription)
 POST http://localhost/api/stripe/webhook
 Accept: application/json
 Content-Type: application/json
@@ -242,7 +259,19 @@ Content-Type: application/json
             "customer": "cus_stripe_mock_owner_1",
             "customer_email": "owner@saas.com",
             "status": "active",
-            "current_period_end": 1791554400
+            "current_period_end": 1791554400,
+            "items": {
+                "data": [
+                    {
+                        "id": "si_invoice_metered_1122",
+                        "price": {
+                            "id": "price_metered_invoices_standard",
+                            "product": "prod_saas_invoices_core"
+                        },
+                        "quantity": 1
+                    }
+                ]
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubscriptionItem extends Model
 {
@@ -43,4 +44,13 @@ class SubscriptionItem extends Model
     {
         return $this->belongsTo(Subscription::class);
     }
+
+    /**
+     * Get the accumulated central usage meter events tracked under this specific Stripe pricing item.
+     */
+    public function meterEvents(): HasMany
+    {
+        return $this->hasMany(MeterEvent::class, 'subscription_item_id');
+    }
+
 }

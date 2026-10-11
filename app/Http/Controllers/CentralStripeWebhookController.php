@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Subscription;
+use App\Models\SubscriptionItem; // UNIFIED: Access the central metered item blueprint
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CentralStripeWebhookController extends Controller
 {
@@ -15,7 +18,6 @@ class CentralStripeWebhookController extends Controller
      */
     public function handleWebhook(Request $request): JsonResponse
     {
-        // 1. Parse the raw JSON payroll payload directly from the request stream
         $payload = $request->all();
 
         if (! isset($payload['type'])) {
@@ -25,25 +27,22 @@ class CentralStripeWebhookController extends Controller
         $eventType = $payload['type'];
         Log::info("Centralized Stripe Webhook received event type: {$eventType}");
 
-        // 2. Route events matching the core subscription life cycles
         if ($eventType === 'customer.subscription.created' || $eventType === 'customer.subscription.updated') {
 
             $dataObject = $payload['data']['object'];
 
-            $stripeCustomerId = $dataObject['customer']; // e.g., 'cus_R4729472'
-            $stripeSubscriptionId = $dataObject['id'];   // e.g., 'sub_123456789'
-            $stripeStatus = $dataObject['status'];       // active, past_due, trialing, canceled
+            $stripeCustomerId = $dataObject['customer'];
+            $stripeSubscriptionId = $dataObject['id'];
+            $stripeStatus = $dataObject['status'];
 
-            // Format timestamps correctly for regional carbon transformations
             $endsAt = isset($dataObject['current_period_end'])
                 ? date('Y-m-d H:i:s', $dataObject['current_period_end'])
                 : null;
 
-            // 3. Locate the central master user owner account bound to this Stripe payment profile
+            // 1. Locate the central master user owner account bound to this Stripe payment profile
             $user = User::on('mysql')->where('stripe_id', $stripeCustomerId)->first();
 
             if (! $user) {
-                // Fallback attempt: If stripe_id mapping isn't populated yet, lookup via customer email if provided
                 $customerEmail = $dataObject['customer_email'] ?? null;
                 if ($customerEmail) {
                     $user = User::on('mysql')->where('email', $customerEmail)->first();
@@ -51,29 +50,46 @@ class CentralStripeWebhookController extends Controller
             }
 
             if ($user) {
-                // 4. Atomically persist or update the main active billing record inside the landlord database
-                Subscription::on('mysql')->updateOrCreate(
-                    [
-                        'stripe_id' => $stripeSubscriptionId,
-                    ],
-                    [
-                        'user_id' => $user->id,
-                        'type' => 'main',
-                        'stripe_status' => $stripeStatus,
-                        'ends_at' => $endsAt,
-                    ]
-                );
+                // 2. Execute inside an atomic transaction to seamlessly bridge multi-item relation nodes
+                DB::connection('mysql')->transaction(function () use ($stripeSubscriptionId, $user, $stripeStatus, $endsAt, $dataObject) {
 
-                Log::info("Successfully synchronized Stripe subscription {$stripeSubscriptionId} to status {$stripeStatus} for User ID: {$user->id}");
+                    // Persist or refresh the core master subscription header record
+                    $subscription = Subscription::on('mysql')->updateOrCreate(
+                        ['stripe_id' => $stripeSubscriptionId],
+                        [
+                            'user_id' => $user->id,
+                            'type' => 'main',
+                            'stripe_status' => $stripeStatus,
+                            'ends_at' => $endsAt,
+                        ]
+                    );
+
+                    // 3. UNIFIED: Extract line items array to register metered usage billing tracks
+                    // If simulated or sent from production stripe multi-item tiers
+                    $stripePriceId = $dataObject['items']['data'][0]['price']['id'] ?? 'price_metered_invoices_standard';
+                    $stripeProductId = $dataObject['items']['data'][0]['price']['product'] ?? 'prod_saas_invoices_core';
+                    $stripeItemId = $dataObject['items']['data'][0]['id'] ?? 'si_mock_' . Str::random(12);
+
+                    SubscriptionItem::on('mysql')->updateOrCreate(
+                        ['stripe_id' => $stripeItemId],
+                        [
+                            'subscription_id' => $subscription->id,
+                            'stripe_product' => $stripeProductId,
+                            'stripe_price' => $stripePriceId,
+                            'quantity' => $dataObject['items']['data'][0]['quantity'] ?? 1,
+                        ]
+                    );
+                });
+
+                Log::info("Successfully synchronized Stripe multi-item subscription {$stripeSubscriptionId} to status {$stripeStatus} for User ID: {$user->id}");
             } else {
                 Log::warning("Stripe Webhook aborted: No matching central user found for Customer ID: {$stripeCustomerId}");
             }
         }
 
-        // 5. Always return a standard 200 success vector to notify Stripe servers to stop retrying the request
         return response()->json([
             'status' => 'success',
-            'message' => 'Centralized webhook processed successfully.'
+            'message' => 'Centralized multi-item webhook processed successfully.'
         ], 200);
     }
 }

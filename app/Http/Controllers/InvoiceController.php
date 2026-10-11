@@ -8,6 +8,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use App\Events\InvoiceCreated;
 
 class InvoiceController extends Controller
 {
@@ -62,6 +63,8 @@ class InvoiceController extends Controller
 
             return $invoice;
         });
+
+        event(new InvoiceCreated($invoice));
 
         return response()->json([
             'status' => 'success',
