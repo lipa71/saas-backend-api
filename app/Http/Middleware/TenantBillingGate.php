@@ -31,8 +31,6 @@ class TenantBillingGate
             return $next($request);
         }
 
-
-
         // 3. Eager load the landlord owner along with their central Stripe subscription records
         $owner = User::on('mysql')->with('subscriptions')->find($tenant->user_id);
 
