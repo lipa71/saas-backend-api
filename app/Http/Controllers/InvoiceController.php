@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\VatRate;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -172,5 +173,26 @@ class InvoiceController extends Controller
 
         // Trigger the internal model aggregate recalculator to finish processing totals
         $invoice->recalculateTotals();
+    }
+
+    /**
+     * Generate and stream a formal bilingual European PDF invoice documentation vector.
+     */
+    public function downloadPdf(Invoice $invoice): \Illuminate\Http\Response
+    {
+        // 1. Enforce rigorous model policy authorization permissions
+        $this->authorize('view', $invoice);
+
+        // 2. Ensure nested lines and specific taxonomy dictionary structures are fully loaded
+        $invoice->load('items.vatRate');
+
+        // 3. Bind runtime parameters using the official isolated DomPDF service wrapper factory
+        $pdf = Pdf::loadView('invoices.pdf', compact('invoice'));
+
+        // 4. Set standardized layout geometry blueprints targeting legal EU printer frames
+        $pdf->setPaper('a4', 'portrait');
+
+        // 5. Stream the resulting compiled binary layout cleanly directly back to client browsers
+        return $pdf->download("Invoice-{$invoice->invoice_number}.pdf");
     }
 }

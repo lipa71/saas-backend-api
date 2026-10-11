@@ -41,6 +41,11 @@ Route::middleware([
             Route::post('/invitations', [InvitationController::class, 'sendInvitation'])
                 ->middleware('role:admin,manager');
 
+            // Invoices Resource Operations
+            Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPDF']);
+            Route::apiResource('invoices', InvoiceController::class);
+
+
             // Temporarily placed for role middleware architecture verification
 //            Route::middleware('role:admin,manager')->get('/test-role-protection', function () {
 //                return response()->json([
