@@ -7,43 +7,49 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EmployeeInvitationMail;
 
 class InvitationController extends Controller
 {
     /**
      * Generate a secure token and store a new employee workspace invitation.
      */
-    public function sendInvitation(Request $request): JsonResponse
+    /**
+     * Generate a unique cryptographic workspace invitation and dispatch a secure mail notification.
+     */
+    public function sendInvitation(Request $request): \Illuminate\Http\JsonResponse
     {
-        // 1. Structural input validation inside the active tenant database context
         $validated = $request->validate([
-            'email' => 'required|email',
-            'role' => 'required|string|in:admin,manager,accountant,viewer', // Restrict to valid corporate roles
+            'email' => 'required|email|unique:users,email',
+            'role' => 'required|string|in:admin,manager,accountant,viewer',
         ]);
 
-        // 2. Compute secure tracking payloads with a strict 24-hour expiration threshold
-        $token = Str::random(40);
-        $expiresAt = now()->addHours(24);
-
-        // 3. Atomically persist the record in the isolated tenant database
+        // 1. Atomically persist the invitation record into the isolated tenant database
         $invitation = Invitation::create([
             'email' => $validated['email'],
-            'token' => $token,
             'role' => $validated['role'],
-            'expires_at' => $expiresAt,
-            'is_accepted' => false,
+            'token' => Str::random(32),
+            'expires_at' => now()->addDays(7),
         ]);
+
+        // 2. Dispatch the luxury pure English notification mail directly to the invitee
+        Mail::to($invitation->email)->send(new EmployeeInvitationMail($invitation));
+
+        // 3. UNIFIED: Generate the exact structural payload requested by the HTTP Client script
+        $activationUrl = 'http://' . tenant('id') . '.localhost/register/accept?token=' . $invitation->token;
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Workspace employee invitation generated successfully.',
+            'message' => 'Workspace team invitation generated and dispatched successfully.',
             'data' => [
+                'id' => $invitation->id,
                 'email' => $invitation->email,
                 'role' => $invitation->role,
-                'expires_at' => $invitation->expires_at->toIso8601String(),
-                'activation_url' => "http://company_a.localhost/api/register/accept?token=" . $token
+                'token' => $invitation->token,
+                'activation_url' => $activationUrl // UNIFIED: Perfectly mapped for JavaScript variable extraction
             ]
-        ], 201);
+        ], 201); // 201 Created status code
     }
 
     /**
