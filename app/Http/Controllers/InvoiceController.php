@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\VatRate;
+use App\Traits\LogsActivity;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -12,6 +13,8 @@ use App\Events\InvoiceCreated;
 
 class InvoiceController extends Controller
 {
+    use LogsActivity;
+
     /**
      * Display a listing of the resource.
      */
@@ -65,6 +68,13 @@ class InvoiceController extends Controller
         });
 
         event(new InvoiceCreated($invoice));
+
+        // AUDIT TRAIL LOGGING: Seamlessly register the creation event inside the tenant audit ledger
+        $this->logAction(
+            'invoice.created',
+            $invoice,
+            "Invoice {$invoice->invoice_number} successfully compiled for customer {$invoice->customer_name}."
+        );
 
         return response()->json([
             'status' => 'success',
@@ -195,7 +205,14 @@ class InvoiceController extends Controller
         // 4. Set standardized layout geometry blueprints targeting legal EU printer frames
         $pdf->setPaper('a4', 'portrait');
 
-        // 5. Stream the resulting compiled binary layout cleanly directly back to client browsers
+        // 5. AUDIT TRAIL LOGGING: Seamlessly record that a user has exported financial documents
+        $this->logAction(
+            'invoice.pdf_downloaded',
+            $invoice,
+            "Commercial PDF documentation for invoice {$invoice->invoice_number} was successfully exported by employee."
+        );
+
+        // 6. Stream the resulting compiled binary layout cleanly directly back to client browsers
         return $pdf->download("Invoice-{$invoice->invoice_number}.pdf");
     }
 }
