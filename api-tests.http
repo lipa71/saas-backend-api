@@ -280,5 +280,22 @@ X-Requested-With: XMLHttpRequest
 Host: company_a.localhost
 Authorization: Bearer {{auth_token}}
 
+### 17. Simulate Stripe Inbound Webhook (Cancel / Delete Subscription)
+POST http://localhost/api/stripe/webhook
+Accept: application/json
+Content-Type: application/json
+
+{
+    "id": "evt_test_{{$random.integer(1, 99999)}}",
+    "type": "customer.subscription.deleted",
+    "data": {
+        "object": {
+            "id": "sub_enterprise_companya_2026",
+            "customer": "cus_stripe_mock_owner_1"
+        }
+    }
+}
+
+
 
 

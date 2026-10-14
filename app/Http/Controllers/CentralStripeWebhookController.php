@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Subscription;
-use App\Models\SubscriptionItem; // UNIFIED: Access the central metered item blueprint
+use App\Models\SubscriptionItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +27,7 @@ class CentralStripeWebhookController extends Controller
         $eventType = $payload['type'];
         Log::info("Centralized Stripe Webhook received event type: {$eventType}");
 
+        // 1. ROUTE ACTIVE CYCLES: Process structural subscription creation and modification events
         if ($eventType === 'customer.subscription.created' || $eventType === 'customer.subscription.updated') {
 
             $dataObject = $payload['data']['object'];
@@ -39,7 +40,7 @@ class CentralStripeWebhookController extends Controller
                 ? date('Y-m-d H:i:s', $dataObject['current_period_end'])
                 : null;
 
-            // 1. Locate the central master user owner account bound to this Stripe payment profile
+            // 2. IDENTITY SEARCH: Locate the central landlord user bound to this customer payload
             $user = User::on('mysql')->where('stripe_id', $stripeCustomerId)->first();
 
             if (! $user) {
@@ -50,10 +51,10 @@ class CentralStripeWebhookController extends Controller
             }
 
             if ($user) {
-                // 2. Execute inside an atomic transaction to seamlessly bridge multi-item relation nodes
+                // 3. ATOMIC SYNCHRONIZATION: Execute multi-item updates wrapped inside a landlord database transaction
                 DB::connection('mysql')->transaction(function () use ($stripeSubscriptionId, $user, $stripeStatus, $endsAt, $dataObject) {
 
-                    // Persist or refresh the core master subscription header record
+                    // Update or create the foundational corporate subscription header
                     $subscription = Subscription::on('mysql')->updateOrCreate(
                         ['stripe_id' => $stripeSubscriptionId],
                         [
@@ -64,8 +65,7 @@ class CentralStripeWebhookController extends Controller
                         ]
                     );
 
-                    // 3. UNIFIED: Extract line items array to register metered usage billing tracks
-                    // If simulated or sent from production stripe multi-item tiers
+                    // Map nested dictionary indices cleanly matching standard Stripe multidimensional arrays
                     $stripePriceId = $dataObject['items']['data'][0]['price']['id'] ?? 'price_metered_invoices_standard';
                     $stripeProductId = $dataObject['items']['data'][0]['price']['product'] ?? 'prod_saas_invoices_core';
                     $stripeItemId = $dataObject['items']['data'][0]['id'] ?? 'si_mock_' . Str::random(12);
@@ -87,6 +87,30 @@ class CentralStripeWebhookController extends Controller
             }
         }
 
+        // 4. ROUTE NEGATIVE CYCLES: Instantly process cancellations and revoke system workspace access
+        if ($eventType === 'customer.subscription.deleted') {
+
+            $dataObject = $payload['data']['object'];
+            $stripeSubscriptionId = $dataObject['id'];
+
+            // Locate the exact target billing ledger entry directly inside the central schema
+            $subscription = Subscription::on('mysql')
+                ->where('stripe_id', $stripeSubscriptionId)
+                ->first();
+
+            if ($subscription) {
+                $subscription->update([
+                    'stripe_status' => 'canceled',
+                    'ends_at' => now(),
+                ]);
+
+                Log::warning("Stripe Webhook Guard: Subscription {$stripeSubscriptionId} was successfully terminated. System access revoked.");
+            } else {
+                Log::warning("Stripe Webhook Guard: Cancellation request skipped. Subscription {$stripeSubscriptionId} not found.");
+            }
+        }
+
+        // 5. EMIT PROTOCOL STANDARD: Return a valid response vector to acknowledge successful delivery
         return response()->json([
             'status' => 'success',
             'message' => 'Centralized multi-item webhook processed successfully.'
