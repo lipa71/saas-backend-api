@@ -31,6 +31,7 @@ Route::middleware([
         // Protected Routes (Only accessible with a valid Sanctum Token)
         Route::middleware([
             'auth:sanctum,central_api',
+            'throttle:tenant_api',
             TenantBillingGate::class,
         ])->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
