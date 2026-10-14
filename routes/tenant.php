@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\CentralBillingPortalController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -44,6 +45,10 @@ Route::middleware([
             // Invoices Resource Operations
             Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPDF']);
             Route::apiResource('invoices', InvoiceController::class);
+
+            // Billing Customer Portal Route Operations
+            Route::post('/billing/portal', [CentralBillingPortalController::class, 'createPortalSession']);
+
 
 
             // Temporarily placed for role middleware architecture verification

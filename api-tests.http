@@ -296,6 +296,14 @@ Content-Type: application/json
     }
 }
 
+### 18. Generate Secure Stripe Customer Billing Portal Session URL
+POST http://localhost/api/billing/portal
+Accept: application/json
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+Host: company_a.localhost
+Authorization: Bearer {{auth_token}}
+
 
 
 
