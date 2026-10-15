@@ -92,5 +92,5 @@ All critical business cycles—ranging from cross-domain login and webhook payme
 * **Name:** Mateusz Grzegorz Lipiński
 * **Role:** Backend Software Engineer / SaaS Architect
 * **LinkedIn:** [Your LinkedIn Profile URL Here]
-* **Email:** [mglipinski92@gmail.com](mailto:mglipinski92@gmail.com)
+* **Email:** [mglipinski92@gmail.com(mailto:mglipinski92@gmail.com)
 * **GitHub Portfolio:** [https://github.com/lipa71](https://github.com/lipa71)
