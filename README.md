@@ -1,6 +1,6 @@
 # Enterprise B2B Multi-Tenant SaaS Platform
 
-### 🚀 Lead Software Engineer: Mateusz Lipa
+### 🚀 Lead Software Engineer: Mateusz Grzegorz Lipiński
 **A production-grade, highly scalable, and secure B2B Multi-Tenant SaaS Platform built using Laravel 11, designed for international financial management and EU-compliant cross-border invoicing in the Euro zone (€).**
 
 ---
