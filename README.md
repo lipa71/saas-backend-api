@@ -113,5 +113,5 @@ Run the background queue listener daemon to handle in-memory PDF generation and 
 
 * **Name:** Mateusz Grzegorz Lipiński
 * **Role:** Backend Software Engineer / SaaS Architect
-* **Email:** [github.com/lipa71](https://github.com/lipa71)
+* **Email:** [mglipinski92@gmail.com](mailto:mglipinski92@gmail.com)
 * **LinkedIn:** [linkedin.com/in/mateusz-lipiński-165956236](https://linkedin.com/in/mateusz-lipiński-165956236)
