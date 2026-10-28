@@ -131,36 +131,13 @@ Fire up the Redis message queue workers daemon to dynamically capture background
 
 ## 🧪 Testing Environment Orchestration (Pest Coverage)
 
-To run the automated **Pest feature suite** securely without clashing against your active local development databases, initialize a separate text context ledger:
-
-### 1. Create Testing Configurations File
-Duplicate your production environment variables specifically targeting the isolated testing database matrix:
-```bash
-cp .env.example .env.testing
-```
-
-### 2. Configure `.env.testing` Keys
-Ensure your `.env.testing` layout has the following parameters set to drop data safely into transactions and connect seamlessly to the internal MySQL Docker engine:
-```env
-APP_ENV=testing
-
-DB_CONNECTION=mysql
-DB_HOST=mysql
-DB_PORT=3306
-DB_DATABASE=testing
-DB_USERNAME=root
-DB_PASSWORD=password
-
-QUEUE_CONNECTION=sync
-```
-
-### 3. Generate Testing Application Encryption Key
+### 1. Generate Testing Application Encryption Key
 Generate a distinct cryptographic key directly inside your testing layout file to authorize secure Sanctum bearer tokens during feature runs:
 ```bash
 ./vendor/bin/sail artisan key:generate --env=testing
 ```
 
-### 4. Execute Automated Tests
+### 2. Execute Automated Tests
 Run the global automated feature suite to achieve 100% green coverage tracking parameters:
 ```bash
 ./vendor/bin/sail artisan test
