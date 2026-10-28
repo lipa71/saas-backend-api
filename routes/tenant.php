@@ -50,16 +50,14 @@ Route::middleware([
             // Billing Customer Portal Route Operations
             Route::post('/billing/portal', [CentralBillingPortalController::class, 'createPortalSession']);
 
-
-
-            // Temporarily placed for role middleware architecture verification
-//            Route::middleware('role:admin,manager')->get('/test-role-protection', function () {
-//                return response()->json([
-//                    'status' => 'success',
-//                    'message' => 'Access granted! The middleware and role system are fully operational.',
-//                    'user' => auth()->user()->only(['id', 'email']),
-//                ]);
-//            });
+            // Role middleware architecture verification
+            Route::middleware('role:admin,manager')->get('/test-role-protection', function () {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Access granted! The middleware and role system are fully operational.',
+                    'user' => auth()->user()->only(['id', 'email']),
+                ]);
+            });
         });
     });
 });
