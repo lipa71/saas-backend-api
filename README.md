@@ -1,6 +1,6 @@
 # Enterprise B2B Multi-Tenant SaaS Platform
 
-### 🚀 Lead Software Engineer: Mateusz Grzegorz Lipiński
+### 🚀 Lead Software Engineer: Mateusz Lipa
 **A production-grade, highly scalable, and secure B2B Multi-Tenant SaaS Platform built using Laravel 11, designed for international financial management and EU-compliant cross-border invoicing in the Euro zone (€).**
 
 The entire infrastructure was designed and implemented by me from scratch to solve real-world architectural challenges of corporate software: strict data isolation, multi-database cross-boundary authentication, and an event-driven asynchronous usage-based billing pipeline. The entire ecosystem is fully containerized inside a custom Docker layout.
@@ -11,7 +11,7 @@ The entire infrastructure was designed and implemented by me from scratch to sol
 
 ### 1. Advanced Multi-Tenancy & Data Isolation (Database-Per-Tenant)
 I implemented a highly secure **Database-Per-Tenant** blueprint driven by `stancl/tenancy` to ensure absolute corporate data isolation.
-* **Dynamic Routing:** Tenants are resolved dynamically at the network layer based on custom subdomains (e.g., `company_1_test.localhost`).
+* **Dynamic Routing:** Tenants are resolved dynamically at the network layer based on custom subdomains (e.g., `company_a.localhost`).
 * **Complete Context Isolation:** The system intercepts incoming database sessions on the fly, switching the active PDO connector context to an isolated tenant schema, effectively neutralizing any risks of cross-tenant data bleeding.
 
 ### 2. Multi-DB Cross-Boundary Authentication & RBAC
@@ -50,17 +50,12 @@ Backed by a bulletproof feature and security testing layout achieving 100% green
 * `CentralSubscriptionArchitectureTest` — Validates the entire Landlord subscription synchronization layer, matching multi-item multi-tenant plans with active Stripe structures.
 * **Teardown Engineering:** Every feature iteration runs an automated raw SQL cleanup script (`DROP DATABASE IF EXISTS`) to fully clear temporary tenant test database footprints from the MySQL server, completely eliminating memory blocks.
 
-To execute the Pest feature suite, run:
-```bash
-./vendor/bin/sail artisan test
-```
-
 ---
 
 ## 🎛️ Docker Stack & Infrastructure
 
 The application runs inside a containerized local development ecosystem managed via Laravel Sail:
-* **`laravel.test`** - PHP 8.5 app container layer executing logic and API kernels.
+* **`laravel.test`** - PHP 8.4/8.5 app container layer executing logic and API kernels.
 * **`mysql`** - Database engine split into central landlord configuration and isolated tenant partitions.
 * **`redis`** - High-performance in-memory key-value database acting as the core job broker distributing asynchronous queue payloads.
 * **`mailpit`** - Secure SMTP interceptor engine trapping outgoing invoice and recruitment emails localizing views under port `8025`.
@@ -80,34 +75,79 @@ The gateway unifies protocol delivery codes according to strict RESTful specific
 
 ---
 
-## 🛠️ Local Installation & Verification
+## 🛠️ Fresh Installation & Verification
+
+Follow these precise steps to spin up the entire multi-database skunkworks application infrastructure from a freshly cloned repository:
 
 ### 1. Environment Synchronization
-Clone the repository and compile the localized environment blueprints:
+Clone the repository, enter the directory, and duplicate the production environment blueprint:
 ```bash
 cp .env.example .env
 ```
 
-### 2. Stand Up the Infrastructure
-Boot up the Docker multi-network bridge in detached mode:
+### 2. Install Composer Dependencies (Bootstrap via Temporary Container)
+Since the `vendor/` directory is missing upon a fresh clone, use this official localized Docker container to securely download and install Composer modules without a local PHP runtime instance:
+```bash
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/var/www/html" \
+    -w /var/www/html \
+    laravelsail/php84-composer:latest \
+    composer install --ignore-platform-reqs
+```
+
+### 3. Spin Up the Infrastructure Stack
+Boot up the Docker skunkworks bridge networks in background detached mode:
 ```bash
 ./vendor/bin/sail up -d
 ```
 
-### 3. Initialize Database Ecosystem
-Execute seeders and primary migration files across all central and tenant boundaries:
+### 4. Application Cryptographic Setup
+Generate the encrypted app runtime handshake signatures:
+```bash
+./vendor/bin/sail artisan key:generate
+```
+
+### 5. Landlord Database Setup & Central Seeding
+Migrate the central landlord configuration system tables and seed the structural dictionaries, VAT plans, and mock enterprise workspace parameters:
 ```bash
 ./vendor/bin/sail artisan migrate --path=database/migrations_central
+./vendor/bin/sail artisan db:seed
+```
+
+### 6. Corporate Tenant Provisioning (`company_a`)
+Run the tenant tenant migrations scheme to provision the core corporate workspaces and build out separate company isolation schemas (e.g., `company_a` storage arrays):
+```bash
 ./vendor/bin/sail artisan tenants:migrate
 ```
 
-### 4. Spin Up the Background Queue Worker
-Run the background queue listener daemon to handle in-memory PDF generation and Stripe event dispatch tracks:
+### 7. Run Background Queue Processors
+Fire up the Redis message queue workers daemon to dynamically capture background streams (PDF compiling and Stripe usage metrics logging):
 ```bash
 ./vendor/bin/sail artisan queue:work
 ```
 
 ---
+
+## 🧪 Testing Environment Orchestration (Pest Coverage)
+
+To run the automated **Pest feature suite** securely without clashing against your active local development databases, initialize a separate text context ledger:
+
+### 1. Create Testing Configurations File
+Duplicate your environment variables specifically targeting the isolated `testing` database matrix:
+```bash
+cp .env.example .env.testing
+```
+
+### 2. Configure `.env.testing` Keys
+
+Ensure your .env.testing layout has the following parameters set to drop data safely into transactions:
+env APP_ENV=testing DB_DATABASE=testing QUEUE_CONNECTION=sync
+
+### 3. Execute Automated Tests
+
+Run the global automated feature suita to achieve 100% green coverage tracking parameters:
+bash ./vendor/bin/sail artisan test
 
 ## 👨‍💻 Author & Contact
 
