@@ -1,13 +1,13 @@
 <?php
 
 it('denies access to companies list for unauthenticated users', function () {
-    // Próbujemy wejść na listę firm bez logowania i bez tokenu Bearer
+    // Attempt to access the companies list without logging in and without a Bearer token
     $response = $this->getJson('/api/companies');
 
-    // Sprawdzamy, czy system prawidłowo odciął dostęp (status 401 Unauthorized)
+    // Verify that the system correctly restricts access (401 Unauthorized status)
     $response->assertStatus(401);
 
-    // Zmieniamy to pole, aby pasowało do standardu Laravela w testach
+    // Assert that the response matches the default Laravel unauthenticated JSON structure
     $response->assertJsonFragment([
         'message' => 'Unauthenticated.',
     ]);

@@ -1,13 +1,13 @@
 <?php
 
 it('returns a successful response for the application status endpoint', function () {
-    // Test symuluje wejście na adres statusu API
+    // Test simulates an access to the API status address.
     $response = $this->getJson('/api/v1/status');
 
-    // Sprawdza, czy serwer odpowiedział statusem 200 OK
+    // Checks whether the server responded with a 200 OK status
     $response->assertStatus(200);
 
-    // Sprawdza, czy dane JSON są poprawne
+    // Checks whether the JSON data is valid
     $response->assertJsonFragment([
         'status' => 'success',
         'message' => 'SaaS Backend API is running perfectly',
